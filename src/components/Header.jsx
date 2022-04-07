@@ -35,7 +35,7 @@ const Header = () => {
     const logout = () => {
         setIsMenu(false)
         localStorage.clear()
-
+        console.log("logout")
         dispatch({
             type: actionType.SET_USER,
             user: null,
