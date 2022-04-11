@@ -9,8 +9,21 @@ import {
 } from "react-icons/md";
 import { categories } from '../utils/data'
 import Loader from './Loader'
+import { storage } from '../firebase.config';
+import {
+  deleteObject,
+  getDownloadURL,
+  ref,
+  uploadBytesResumable,
+} from "firebase/storage";
+import { snapshotEqual } from 'firebase/firestore';
+import { getAllFoodItems, saveItem } from '../utils/firebaseFunctions';
+import { useStateValue } from "../context/StateProvider";
+import { actionType } from '../context/reducer';
+
 
 const CreateContainer = () => {
+  const [{ foodItems }, dispatch] = useStateValue()
   const [title, setTitle] = useState("")
   const [calories, setCalories] = useState("")
   const [price, setPrice] = useState("")
@@ -21,11 +34,108 @@ const CreateContainer = () => {
   const [msg, setMsg] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
 
-  const uploadImage= () => {}
+  const uploadImage= (e) => {
+    setIsLoading(true)
+    const imageFile = e.target.files[0]
+    const storageRef = ref(storage, `Images/${Date.now()}-${imageFile.name}`)
+    const uploadTask = uploadBytesResumable(storageRef, imageFile)
+    uploadTask.on('state_changed',(snapshot) => {
+      const uploadProgress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+    }, (err) => {
+      console.log(err)
+      setFields(true)
+      setMsg('Error while uploading')
+      setAlertStatus('danger')
+      setTimeout(() => {
+        setFields(false)
+        setIsLoading(false)
+      },4000)
+    },() => {
+      getDownloadURL(uploadTask.snapshot.ref).then(downlaodURl => {
+        setImageAsset(downlaodURl)
+        setIsLoading(false)
+        setFields(true)
+        setMsg('Image uploaded successfully 🙂 ')
+        setAlertStatus('success')
+        setTimeout(() => {
+          setFields(false)
+        },4000)
+      })
+    })
+  }
 
-  const deleteImage = () => {}
+  const deleteImage = () => {
+    setIsLoading(false)
+    const deleteRef = ref(storage,imageAsset)
+    deleteObject(deleteRef).then(() => {
+      setImageAsset(null)
+      setIsLoading(false)
+      setFields(true)
+      setMsg('Image delted successfully 🙂 ')
+      setAlertStatus('success')
+      setTimeout(() => {
+        setFields(false)
+      },4000)
+    })
+  }
 
-  const saveDetails = () => {}
+  const clearData = () => {
+    setTitle("");
+    setImageAsset(null);
+    setCalories("");
+    setPrice("");
+    setCalories("Select Category");
+  }
+  
+  const fetchFoodItems = async () => {
+      await getAllFoodItems().then((data) => {
+        dispatch({
+          type: actionType.SET_FOOD_ITEMS,
+          foodItems: data,
+        })
+      })
+    }
+
+  const saveDetails = () => {
+    setIsLoading(true);
+    try {
+      if ((!title && !calories && !price && !imageAsset, !category)) {
+        setFields(true);
+        setMsg("Required fields can't be empty");
+        setAlertStatus("danger");
+        setTimeout(() => {
+          setFields(false);
+          setIsLoading(false);
+        }, 4000);
+      } else {
+        const data = {
+          id: `${Date.now()}`,
+          title: title,
+          imageURL: imageAsset,
+          category: category,
+          calories: calories,
+          qty: 1,
+          price: price,
+        };
+
+        saveItem(data)
+
+        setIsLoading(false);
+        setFields(true);
+        setMsg("Data uploaded successfully 😊");
+        clearData()
+        setAlertStatus("success");
+        setTimeout(() => {
+          setFields(false);
+        }, 4000);
+
+      }
+    } catch (error) {
+      console.log(error);
+    }
+
+    fetchFoodItems()
+  };
 
   return (
     <div className='w-full min-h-screen flex items-center justify-center'>
