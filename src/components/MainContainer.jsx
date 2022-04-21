@@ -24,7 +24,7 @@ const MainContainer = () => {
             <motion.div 
             onClick={() => setScrollValue(-200)}
             whileTap={{ scale:0.75 }}
-            className='w-8 h-8 rounded-lg bg-orange-300 hover:bg-orange-500 flex items-center justify-center cursor-pointer transition-all duration-100 ease-in-out'>
+            className='w-8 h-8 rounded-lg bg-orange-300 hover:bg-orange-500 flex items-center justify-center cursor-pointer '>
               <MdChevronLeft className='text-lg text-white' />
             </motion.div>
             <motion.div 
